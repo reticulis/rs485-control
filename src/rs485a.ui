@@ -1,0 +1,69 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.8.2 -->
+<interface>
+  <!-- interface-name rs485.ui -->
+  <requires lib="gtk" version="4.0"/>
+  <object class="GtkApplicationWindow" id="window">
+    <property name="default-height">150</property>
+    <property name="default-width">500</property>
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkBox">
+            <property name="margin-bottom">2</property>
+            <property name="margin-end">2</property>
+            <property name="margin-start">2</property>
+            <property name="margin-top">2</property>
+            <child>
+              <object class="GtkComboBoxText" id="devices">
+                <property name="margin-bottom">10</property>
+                <property name="margin-end">10</property>
+                <property name="margin-start">10</property>
+                <property name="margin-top">10</property>
+                <property name="width-request">317</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="refresh_button">
+                <property name="icon-name">view-refresh</property>
+                <property name="margin-bottom">10</property>
+                <property name="margin-end">10</property>
+                <property name="margin-start">10</property>
+                <property name="margin-top">10</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="connect_button">
+                <property name="label">Connect</property>
+                <property name="margin-bottom">10</property>
+                <property name="margin-end">10</property>
+                <property name="margin-start">10</property>
+                <property name="margin-top">10</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <child>
+              <object class="GtkComboBoxText" id="relays">
+                <property name="margin-bottom">10</property>
+                <property name="margin-end">10</property>
+                <property name="margin-start">10</property>
+                <property name="width-request">425</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkSwitch" id="on_off_switch">
+                <property name="margin-bottom">10</property>
+                <property name="margin-end">10</property>
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>
