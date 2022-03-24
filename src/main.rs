@@ -46,8 +46,8 @@ fn build_ui(application: &Application) {
     }));
 
     relays.connect_active_notify(move |_| {
-        rs485_write(&check_relay(0));
-        rs485_read(&[0])
+        // rs485_write(&check_relay(0));
+        // rs485_read(&[0])
     });
 
     window.show();
