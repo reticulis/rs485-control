@@ -4,24 +4,25 @@
   <!-- interface-name rs485.ui -->
   <requires lib="gtk" version="4.0"/>
   <object class="GtkApplicationWindow" id="window">
-    <property name="default-height">150</property>
-    <property name="default-width">500</property>
+    <property name="default-height">300</property>
+    <property name="default-width">600</property>
     <child>
       <object class="GtkBox">
         <property name="orientation">vertical</property>
         <child>
           <object class="GtkBox">
+            <property name="halign">center</property>
             <property name="margin-bottom">2</property>
             <property name="margin-end">2</property>
             <property name="margin-start">2</property>
             <property name="margin-top">2</property>
+            <property name="valign">center</property>
             <child>
               <object class="GtkComboBoxText" id="devices">
                 <property name="margin-bottom">10</property>
                 <property name="margin-end">10</property>
                 <property name="margin-start">10</property>
                 <property name="margin-top">10</property>
-                <property name="width-request">317</property>
               </object>
             </child>
             <child>
@@ -33,32 +34,46 @@
                 <property name="margin-top">10</property>
               </object>
             </child>
-            <child>
-              <object class="GtkButton" id="connect_button">
-                <property name="label">Connect</property>
-                <property name="margin-bottom">10</property>
-                <property name="margin-end">10</property>
-                <property name="margin-start">10</property>
-                <property name="margin-top">10</property>
-              </object>
-            </child>
           </object>
         </child>
         <child>
           <object class="GtkBox">
+            <property name="halign">center</property>
             <child>
               <object class="GtkComboBoxText" id="relays">
                 <property name="margin-bottom">10</property>
                 <property name="margin-end">10</property>
                 <property name="margin-start">10</property>
-                <property name="width-request">425</property>
+                <property name="sensitive">False</property>
               </object>
             </child>
             <child>
               <object class="GtkSwitch" id="on_off_switch">
                 <property name="margin-bottom">10</property>
                 <property name="margin-end">10</property>
+                <property name="sensitive">False</property>
                 <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <child>
+              <object class="GtkScrolledWindow" id="scrolled_window">
+                <property name="margin-bottom">10</property>
+                <property name="margin-end">10</property>
+                <property name="margin-start">10</property>
+                <property name="max-content-width">150</property>
+                <property name="propagate-natural-height">True</property>
+                <property name="propagate-natural-width">True</property>
+                <child>
+                  <object class="GtkTextView" id="text_view">
+                    <property name="cursor-visible">False</property>
+                    <property name="editable">False</property>
+                  </object>
+                </child>
               </object>
             </child>
           </object>
