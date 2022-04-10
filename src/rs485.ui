@@ -1,36 +1,43 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- Created with Cambalache 0.8.2 -->
+<!-- Created with Cambalache 0.9.0 -->
 <interface>
   <!-- interface-name rs485.ui -->
-  <requires lib="gtk" version="4.0"/>
-  <object class="GtkApplicationWindow" id="window">
+  <requires lib="gtk" version="4.2"/>
+  <requires lib="libadwaita" version="1.1"/>
+  <object class="AdwApplicationWindow" id="window">
     <property name="default-height">300</property>
     <property name="default-width">600</property>
     <child>
       <object class="GtkBox">
         <property name="orientation">vertical</property>
         <child>
+          <object class="AdwHeaderBar">
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkMenuButton">
+                    <property name="icon-name">open-menu-symbolic</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
           <object class="GtkBox">
             <property name="halign">center</property>
-            <property name="margin-bottom">2</property>
-            <property name="margin-end">2</property>
-            <property name="margin-start">2</property>
-            <property name="margin-top">2</property>
-            <property name="valign">center</property>
             <child>
               <object class="GtkComboBoxText" id="devices">
                 <property name="margin-bottom">10</property>
                 <property name="margin-end">10</property>
-                <property name="margin-start">10</property>
                 <property name="margin-top">10</property>
               </object>
             </child>
             <child>
               <object class="GtkButton" id="refresh_button">
-                <property name="icon-name">view-refresh</property>
+                <property name="icon-name">view-refresh-symbolic</property>
                 <property name="margin-bottom">10</property>
-                <property name="margin-end">10</property>
-                <property name="margin-start">10</property>
                 <property name="margin-top">10</property>
               </object>
             </child>
@@ -43,15 +50,11 @@
               <object class="GtkComboBoxText" id="relays">
                 <property name="margin-bottom">10</property>
                 <property name="margin-end">10</property>
-                <property name="margin-start">10</property>
-                <property name="sensitive">False</property>
               </object>
             </child>
             <child>
               <object class="GtkSwitch" id="on_off_switch">
                 <property name="margin-bottom">10</property>
-                <property name="margin-end">10</property>
-                <property name="sensitive">False</property>
                 <property name="valign">center</property>
               </object>
             </child>

@@ -6,10 +6,8 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use gtk::prelude::*;
-use gtk::{
-    Application, ApplicationWindow, Builder, Button, ComboBoxText, ScrolledWindow, Switch,
-    TextBuffer, TextView,
-};
+use adw::{ApplicationWindow, HeaderBar, Application};
+use gtk::{Builder, Button, ComboBoxText, ScrolledWindow, Switch, TextBuffer, TextView};
 use serialport::{Error, SerialPort, SerialPortInfo};
 
 struct App {
@@ -24,16 +22,21 @@ impl App {
         }
     }
     fn run(self) {
-        let application = Application::new(
+        let application = adw::Application::new(
             Some("com.github.reticulis.rs485-control"),
             Default::default(),
         );
+
+        application.connect_startup(|_| {
+            adw::init();
+        });
+
         application.connect_activate(move |f| self.build_ui(f));
         application.run();
     }
 
     fn build_ui(&self, application: &Application) {
-        let ui_src = include_str!("rs485a.ui");
+        let ui_src = include_str!("rs485.ui");
         let builder = Builder::from_string(ui_src);
 
         let window: ApplicationWindow = builder

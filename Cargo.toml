@@ -12,3 +12,7 @@ glib-macros = "0.15.10"
 crc = "2.0"
 serialport = "4.0.1"
 chrono = "0.4"
+
+[dependencies.adw]
+package = "libadwaita"
+version = "0.1.1"
