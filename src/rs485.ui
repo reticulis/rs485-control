@@ -12,12 +12,23 @@
         <property name="orientation">vertical</property>
         <child>
           <object class="AdwHeaderBar">
+            <property name="centering-policy">strict</property>
             <child>
               <object class="GtkBox">
-                <property name="orientation">vertical</property>
                 <child>
                   <object class="GtkMenuButton">
                     <property name="icon-name">open-menu-symbolic</property>
+                    <child>
+                      <object class="GtkPopoverMenu">
+                        <child>
+                          <object class="GtkButton">
+                            <property name="icon-name">view-refresh-symbolic</property>
+                            <property name="margin-bottom">10</property>
+                            <property name="margin-top">10</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>

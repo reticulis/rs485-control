@@ -187,20 +187,22 @@ fn rs485_read_ascii() {
 
 fn control_command(id: u8, command: u8) -> Vec<u8> {
     let mut control = vec![0x01, 0x06, 0x00, id + 1, command, 0x00];
-    let checksum = Crc::<u16>::new(&CRC_16_MODBUS).checksum(&control);
-    control.push(((checksum << 8) >> 8) as u8);
-    control.push((checksum >> 8) as u8);
+    checksum(&mut control);
 
     control
 }
 
 fn read_status_command(id: u8) -> Vec<u8> {
     let mut read_status = vec![0x01, 0x03, 0x00, id + 1, 0x00, 0x01];
-    let checksum = Crc::<u16>::new(&CRC_16_MODBUS).checksum(&read_status);
-    read_status.push(((checksum << 8) >> 8) as u8);
-    read_status.push((checksum >> 8) as u8);
+    checksum(&mut read_status);
 
     read_status
+}
+
+fn checksum(vec: &mut Vec<u8>) {
+    let checksum = Crc::<u16>::new(&CRC_16_MODBUS).checksum(&vec);
+    vec.push(((checksum << 8) >> 8) as u8);
+    vec.push((checksum >> 8) as u8);
 }
 
 // TODO
