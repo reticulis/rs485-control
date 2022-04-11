@@ -6,7 +6,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use gtk::prelude::*;
-use adw::{ApplicationWindow, HeaderBar, Application};
+use adw::{ApplicationWindow, Application};
 use gtk::{Builder, Button, ComboBoxText, ScrolledWindow, Switch, TextBuffer, TextView};
 use serialport::{Error, SerialPort, SerialPortInfo};
 
@@ -105,42 +105,62 @@ impl App {
             devices_list.set_active(Some(0));
         }));
 
-        let on_off_switch_handler_id = Rc::new(on_off_switch.connect_state_notify(clone!(@weak relays, @weak text, @weak text_view, @strong ports, @weak devices_list => move |switch| {
+        let on_off_switch_handler_id = Rc::new(
+            on_off_switch.connect_state_notify(
+                clone!(
+                    @weak relays,
+                    @weak text,
+                    @weak text_view,
+                    @strong ports,
+                    @weak devices_list
+                    => move |switch| {
             let mut port = set_port(&ports, devices_list.active().unwrap() as usize).unwrap();
             match switch.is_active() {
                 true => {
                     let buf = control_command(relays.active().unwrap() as u8, 1);
                     rs485_write(&mut port, &buf);
-                    let time = chrono::Local::now();
-                    text.insert(&mut text.end_iter(), &*format!("{:>02}:{:>02}:{:>02} Sent: {:X?}\n", time.hour(), time.minute(), time.second(),&buf));
+                    text.insert(&mut text.end_iter(), &*format!("{} Sent: {:X?}\n", time_execute(), &buf));
                 },
                 false => {
                     let buf = control_command(relays.active().unwrap() as u8, 2);
                     rs485_write(&mut port, &buf);
-                    let time = chrono::Local::now();
-                    text.insert(&mut text.end_iter(), &*format!("{:>02}:{:>02}:{:>02} Sent: {:X?}\n", time.hour(), time.minute(), time.second(),&buf));
+                    text.insert(&mut text.end_iter(), &*format!("{} Sent: {:X?}\n", time_execute(), &buf));
                 }
             }
         })));
 
-        relays.connect_active_notify(clone!(@weak on_off_switch, @strong ports, @weak text, @weak text_view, @strong on_off_switch_handler_id => move |relay| {
+        relays.connect_active_notify(
+            clone!(
+                @weak on_off_switch,
+                @strong ports,
+                @weak text,
+                @weak text_view,
+                @strong on_off_switch_handler_id
+                => move |relay| {
             let mut port = set_port(&ports, devices_list.active().unwrap() as usize).unwrap();
             let buf = read_status_command(relay.active().unwrap() as u8);
             rs485_write(&mut port, &buf);
             let data = rs485_read(&mut port);
-            dbg!(&buf);
-            dbg!(&data);
-            dbg!(relay.active().unwrap());
-            let time = chrono::Local::now();
-            text.insert(&mut text.end_iter(), &*format!("{:>02}:{:>02}:{:>02} Sent: {:X?}\n{:>02}:{:>02}:{:>02} Received: {:X?}\n", time.hour(), time.minute(), time.second(), &buf, time.hour(), time.minute(), time.second(), &data));
+            text.insert(
+                &mut text.end_iter(),
+                &*format!("{} Sent: {:X?}\n{} Received: {:X?}\n",
+                    time_execute(),
+                    &buf,
+                    time_execute(),
+                    &data
+                )
+            );
             on_off_switch.block_signal(&on_off_switch_handler_id);
-            if data == [0x01, 0x03, 0x02, 0x00, 0x01, 0x79, 0x84] {
-                on_off_switch.set_state(true);
-            } else if data == [0x01, 0x03, 0x02, 0x00, 0x00, 0xB8, 0x44] {
-                on_off_switch.set_state(false);
-            } else {
-                text.insert(&mut text.end_iter(), &*format!("{:>02}:{:>02}:{:>02} Valid data! : {:X?}\n", time.hour(), time.minute(), time.second(), &data))
-            };
+            match data {
+                 [0x01, 0x03, 0x02, 0x00, 0x01, 0x79, 0x84] => on_off_switch.set_state(true),
+                 [0x01, 0x03, 0x02, 0x00, 0x00, 0xB8, 0x44] => on_off_switch.set_state(false),
+                 _ => {
+                    text.insert(
+                        &mut text.end_iter(),
+                        &*format!("{} Valid data! : {:X?}\n", time_execute(), &data)
+                    )
+                }
+            }
             on_off_switch.unblock_signal(&on_off_switch_handler_id);
         }));
 
@@ -214,6 +234,11 @@ fn set_port(ports: &Vec<SerialPortInfo>, id: usize) -> Result<Box<dyn SerialPort
         Ok(e) => Ok(e),
         Err(e) => Err(e),
     }
+}
+
+fn time_execute() -> String {
+    let time = chrono::Local::now();
+    format!("{:>02}:{:>02}:{:>02}", time.hour(), time.minute(), time.second())
 }
 
 fn try_connect_to_device(
