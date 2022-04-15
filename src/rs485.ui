@@ -10,25 +10,15 @@
     <child>
       <object class="GtkBox">
         <property name="orientation">vertical</property>
+        <property name="spacing">10</property>
         <child>
           <object class="AdwHeaderBar">
             <property name="centering-policy">strict</property>
             <child>
               <object class="GtkBox">
                 <child>
-                  <object class="GtkMenuButton">
+                  <object class="GtkMenuButton" id="primaryMenu">
                     <property name="icon-name">open-menu-symbolic</property>
-                    <child>
-                      <object class="GtkPopoverMenu">
-                        <child>
-                          <object class="GtkButton">
-                            <property name="icon-name">view-refresh-symbolic</property>
-                            <property name="margin-bottom">10</property>
-                            <property name="margin-top">10</property>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
                   </object>
                 </child>
               </object>
@@ -38,18 +28,13 @@
         <child>
           <object class="GtkBox">
             <property name="halign">center</property>
+            <property name="spacing">10</property>
             <child>
-              <object class="GtkComboBoxText" id="devices">
-                <property name="margin-bottom">10</property>
-                <property name="margin-end">10</property>
-                <property name="margin-top">10</property>
-              </object>
+              <object class="GtkComboBoxText" id="devices"/>
             </child>
             <child>
               <object class="GtkButton" id="refresh_button">
                 <property name="icon-name">view-refresh-symbolic</property>
-                <property name="margin-bottom">10</property>
-                <property name="margin-top">10</property>
               </object>
             </child>
           </object>
@@ -57,15 +42,30 @@
         <child>
           <object class="GtkBox">
             <property name="halign">center</property>
+            <property name="spacing">10</property>
             <child>
-              <object class="GtkComboBoxText" id="relays">
-                <property name="margin-bottom">10</property>
-                <property name="margin-end">10</property>
+              <object class="GtkLabel">
+                <property name="label">Relay:</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkSpinButton" id="relays">
+                <property name="adjustment">spinadj</property>
+                <property name="sensitive">False</property>
+                <property name="valign">center</property>
+                <child>
+                  <object class="GtkAdjustment" id="spinadj">
+                    <property name="lower">1.0</property>
+                    <property name="step-increment">1.0</property>
+                    <property name="upper">16.0</property>
+                    <property name="value">1.0</property>
+                  </object>
+                </child>
               </object>
             </child>
             <child>
               <object class="GtkSwitch" id="on_off_switch">
-                <property name="margin-bottom">10</property>
+                <property name="sensitive">False</property>
                 <property name="valign">center</property>
               </object>
             </child>
@@ -73,19 +73,63 @@
         </child>
         <child>
           <object class="GtkBox">
+            <property name="margin-end">10</property>
+            <property name="margin-start">10</property>
             <property name="orientation">vertical</property>
             <child>
               <object class="GtkScrolledWindow" id="scrolled_window">
-                <property name="margin-bottom">10</property>
-                <property name="margin-end">10</property>
-                <property name="margin-start">10</property>
                 <property name="max-content-width">150</property>
                 <property name="propagate-natural-height">True</property>
                 <property name="propagate-natural-width">True</property>
+                <property name="vexpand">True</property>
                 <child>
                   <object class="GtkTextView" id="text_view">
                     <property name="cursor-visible">False</property>
                     <property name="editable">False</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="baseline-position">bottom</property>
+            <property name="margin-bottom">10</property>
+            <property name="margin-end">10</property>
+            <property name="margin-start">10</property>
+            <property name="orientation">vertical</property>
+            <property name="spacing">10</property>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="spacing">10</property>
+                    <child>
+                      <object class="GtkEntry" id="entry_command">
+                        <property name="hexpand">True</property>
+                        <property name="placeholder-text">Type a command... ex. "AT+O1" or "01 03 00 01 00 01 D5 CA"</property>
+                        <property name="sensitive">False</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="label">+ CRC</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkCheckButton" id="crc_check_button">
+                        <property name="sensitive">False</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="send_button">
+                        <property name="label">Send</property>
+                        <property name="sensitive">False</property>
+                        <property name="width-request">50</property>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>
