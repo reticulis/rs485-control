@@ -6,7 +6,7 @@ use glib_macros::clone;
 use std::rc::Rc;
 
 use adw::{Application, ApplicationWindow};
-use gtk::prelude::*;
+use adw::prelude::*;
 use gtk::{
     Builder, Button, CheckButton, ComboBoxText, Entry, ScrolledWindow, SpinButton, Switch, TextView,
 };
@@ -53,7 +53,7 @@ pub fn build_ui(application: &Application) {
     let ports= serialport::available_ports().unwrap();
 
     if ports.len() != 0 {
-        for name in ports {
+        for name in &ports {
             devices_list.append_text(&*name.port_name);
         }
         match try_connect_to_device(&ports, 0) {
