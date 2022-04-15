@@ -1,16 +1,21 @@
-use std::cell::RefCell;
-use super::text_formatting::{convert_to_hex_format, convert_text_to_hex, time_execute};
-use super::device::{rs485_read, rs485_write, read_status_command, control_command, try_connect_to_device, set_port};
+use super::text_formatting::{
+    convert_to_hex_format, convert_text_to_hex, time_execute, convert_hex_to_ascii
+};
+use super::device::{
+    rs485_read, rs485_write, read_status_command, checksum, control_command, try_connect_to_device, set_port
+};
+
 
 use glib_macros::clone;
 use std::rc::Rc;
+use std::cell::RefCell;
 
 use adw::{Application, ApplicationWindow};
 use adw::prelude::*;
 use gtk::{
     Builder, Button, CheckButton, ComboBoxText, Entry, ScrolledWindow, SpinButton, Switch, TextView,
 };
-use crate::app::values::{CGOBJECT, CGWINDOW, NFOUND, RELAY_OPEN, RELAY_CLOSE};
+use crate::app::values::{CGOBJECT, CGWINDOW, NFOUND, RELAY_OPEN, RELAY_CLOSE, TypeData};
 
 pub fn build_ui(application: &Application) {
     let ui_src = include_str!("../rs485.ui");
@@ -126,21 +131,30 @@ pub fn build_ui(application: &Application) {
                 &ports.borrow(),
                 devices_list.active().unwrap() as u8
             ).unwrap();
-            let buf: Vec<u8>;
-            match switch.is_active() {
+            let buf = match switch.is_active() {
                 true => {
-                    buf = control_command(relays.value() as u8 - 1, 1);
-
+                    control_command(relays.value() as u8 - 1, 1)
                 },
                 false => {
-                    buf = control_command(relays.value() as u8 - 1, 2);
+                    control_command(relays.value() as u8 - 1, 2)
+                }
+            };
+            rs485_write(&mut port, &buf);
+            let data = rs485_read(&mut port);
+            match data {
+                Ok(d) => {
+                    text.insert(
+                        &mut text.end_iter(),
+                        &*format!("\n{} Sent: {}\n{} Received: {}\n", time_execute(), convert_to_hex_format(&buf), time_execute(), convert_to_hex_format(&d))
+                    );
+                }
+                Err(e) => {
+                    text.insert(
+                        &mut text.end_iter(),
+                        &*format!("{} Error reading data! : {:X?}\n", time_execute(), e.description)
+                    )
                 }
             }
-            rs485_write(&mut port, &buf);
-            text.insert(
-                &mut text.end_iter(),
-                &*format!("\n{} Sent: {}\n", time_execute(), convert_to_hex_format(&buf))
-            );
         }
     )));
 
@@ -201,32 +215,57 @@ pub fn build_ui(application: &Application) {
         }),
     );
 
-    send_button.connect_clicked(clone!(@weak entry_command, @weak crc_check_button, @weak text, @strong ports, @weak devices_list => move |_| {
-        let mut port = set_port(
+    send_button.connect_clicked(
+        clone!(
+            @weak entry_command,
+            @weak crc_check_button,
+            @weak text,
+            @strong ports,
+            @weak devices_list,
+            @strong crc_check_button
+            => move |_| {
+                let mut port = set_port(
                     &ports.borrow(),
                     devices_list.active().unwrap() as u8
                 ).unwrap();
-        match convert_text_to_hex(entry_command.text().to_string()) {
-            Ok(v) => {
-                text.insert(
-                    &mut text.end_iter(),
-                    &*format!("{} Command sent: {}\n", time_execute(), entry_command.text().to_string())
-                );
-                rs485_write(&mut port, &v);
-            }
-            Err(e) => {
-                text.insert(
-                    &mut text.end_iter(),
-                    &*format!("{} {}\n", time_execute(), e)
-                );
-            }
-        }
-    }));
 
-    // TEST ASCII
-    // let mut port = set_port(&ports);
-    // rs485_write(&mut port, &[0x41, 0x54, 0x2B, 0x4F, 0x31]); // AT+O1
-    // println!("{:X?}", rs485_read(&mut port).iter().map(|&x| x as char).collect::<Vec<char>>());
+                let entry_text = entry_command.text();
+
+                match convert_text_to_hex(entry_text.to_string()) {
+                    Ok((mut v, t)) => {
+                        if crc_check_button.is_active() {
+                            checksum(&mut v);
+                        }
+                        rs485_write(&mut port, &v);
+                        let data = rs485_read(&mut port);
+                        match data {
+                            Ok(d) => {
+                                let received = match t {
+                                    TypeData::ASCII => convert_hex_to_ascii(d),
+                                    TypeData::MODBUS => convert_to_hex_format(&d)
+                                };
+                                text.insert(
+                                    &mut text.end_iter(),
+                                    &*format!("\n{} Command sent: {}\n{} Received: {:?}\n", time_execute(), entry_text.to_string(), time_execute(), received)
+                                );
+                            }
+                            Err(e) => {
+                                text.insert(
+                                    &mut text.end_iter(),
+                                    &*format!("{} Error reading data! : {:X?}\n", time_execute(), e.description)
+                                )
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        text.insert(
+                            &mut text.end_iter(),
+                            &*format!("{} {}\n", time_execute(), e)
+                        );
+                    }
+                }
+            }
+        ));
 
     window.show();
 }

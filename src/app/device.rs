@@ -1,6 +1,7 @@
+use std::io::Read;
 use std::time::Duration;
 use crc::{Crc, CRC_16_MODBUS};
-use serialport::{Error, SerialPort, SerialPortInfo};
+use serialport::{DataBits, Error, Parity, SerialPort, SerialPortInfo, StopBits};
 
 pub fn rs485_write(port: &mut Box<dyn SerialPort>, buf: &[u8]) {
     port.write(&buf).unwrap();
@@ -10,9 +11,9 @@ fn rs485_write_ascii() {
     unimplemented!()
 }
 
-pub fn rs485_read(port: &mut Box<dyn SerialPort>) -> Result<[u8; 7], Error> {
-    let mut read_buf: [u8; 7] = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
-    port.read(&mut read_buf)?;
+pub fn rs485_read(port: &mut Box<dyn SerialPort>) -> Result<Vec<u8>, Error> {
+    let mut read_buf = Vec::new();
+    port.read_to_end(&mut read_buf);
     Ok(read_buf)
 }
 
@@ -34,7 +35,7 @@ pub fn read_status_command(id: u8) -> Vec<u8> {
     read_status
 }
 
-fn checksum(vec: &mut Vec<u8>) {
+pub fn checksum(vec: &mut Vec<u8>) {
     let checksum = Crc::<u16>::new(&CRC_16_MODBUS).checksum(&vec);
     vec.push(((checksum << 8) >> 8) as u8);
     vec.push((checksum >> 8) as u8);
@@ -44,6 +45,9 @@ fn checksum(vec: &mut Vec<u8>) {
 pub fn set_port(ports: &Vec<SerialPortInfo>, id: u8) -> Result<Box<dyn SerialPort>, Error> {
     match serialport::new(&*ports[id as usize].port_name, 9600)
         .timeout(Duration::from_millis(100))
+        .data_bits(DataBits::Eight)
+        .parity(Parity::None)
+        .stop_bits(StopBits::One)
         .open()
     {
         Ok(e) => Ok(e),
