@@ -50,13 +50,13 @@ pub fn build_ui(application: &Application) {
         .expect(CGOBJECT);
     let text = text_view.buffer();
 
-    let ports= serialport::available_ports().unwrap();
+    let ports = RefCell::new(serialport::available_ports().unwrap());
 
-    if ports.len() != 0 {
-        for name in &ports {
+    if ports.borrow().len() != 0 {
+        for name in ports.borrow().iter() {
             devices_list.append_text(&*name.port_name);
         }
-        match try_connect_to_device(&ports, 0) {
+        match try_connect_to_device(&ports.borrow(), 0) {
             (b, s) => {
                 relays.set_sensitive(b);
                 on_off_switch.set_sensitive(b);
@@ -86,7 +86,7 @@ pub fn build_ui(application: &Application) {
         @weak entry_command,
         @weak crc_check_button
         => move |devices_list| {
-            match try_connect_to_device(&ports, devices_list.active().unwrap() as u8) {
+            match try_connect_to_device(&ports.borrow(), devices_list.active().unwrap() as u8) {
                 (b, s) => {
                     relays.set_sensitive(b);
                     on_off_switch.set_sensitive(b);
@@ -101,8 +101,6 @@ pub fn build_ui(application: &Application) {
             }
         }
     ));
-
-    let ports = RefCell::new(ports);
 
     refresh_button.connect_clicked(clone!(@weak devices_list, @strong ports => move |_| {
         devices_list.remove_all();
