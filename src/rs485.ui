@@ -14,15 +14,6 @@
         <child>
           <object class="AdwHeaderBar">
             <property name="centering-policy">strict</property>
-            <child>
-              <object class="GtkBox">
-                <child>
-                  <object class="GtkMenuButton" id="primaryMenu">
-                    <property name="icon-name">open-menu-symbolic</property>
-                  </object>
-                </child>
-              </object>
-            </child>
           </object>
         </child>
         <child>
@@ -30,7 +21,9 @@
             <property name="halign">center</property>
             <property name="spacing">10</property>
             <child>
-              <object class="GtkComboBoxText" id="devices"/>
+              <object class="GtkComboBoxText" id="devices">
+                <property name="active">0</property>
+              </object>
             </child>
             <child>
               <object class="GtkButton" id="refresh_button">

@@ -5,16 +5,13 @@ use super::device::{
     rs485_read, rs485_write, read_status_command, checksum, control_command, try_connect_to_device, set_port
 };
 
-
 use glib_macros::clone;
 use std::rc::Rc;
 use std::cell::RefCell;
 
 use adw::{Application, ApplicationWindow};
 use adw::prelude::*;
-use gtk::{
-    Builder, Button, CheckButton, ComboBoxText, Entry, ScrolledWindow, SpinButton, Switch, TextView,
-};
+use gtk::{Builder, Button, CheckButton, ComboBoxText, Entry, ScrolledWindow, SpinButton, Switch, TextView};
 use crate::app::values::{CGOBJECT, CGWINDOW, NFOUND, RELAY_OPEN, RELAY_CLOSE, TypeData};
 
 pub fn build_ui(application: &Application) {
@@ -265,7 +262,8 @@ pub fn build_ui(application: &Application) {
                     }
                 }
             }
-        ));
+        )
+    );
 
     window.show();
 }

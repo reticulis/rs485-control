@@ -7,18 +7,18 @@ pub fn rs485_write(port: &mut Box<dyn SerialPort>, buf: &[u8]) {
     port.write(&buf).unwrap();
 }
 
-fn rs485_write_ascii() {
-    unimplemented!()
-}
-
 pub fn rs485_read(port: &mut Box<dyn SerialPort>) -> Result<Vec<u8>, Error> {
     let mut read_buf = Vec::new();
-    port.read_to_end(&mut read_buf);
-    Ok(read_buf)
-}
-
-fn rs485_read_ascii() {
-    unimplemented!()
+    match port.read_to_end(&mut read_buf) {
+        Ok(_) => Ok(read_buf),
+        Err(e) => {
+            if read_buf.len() == 0 {
+                Err(Error::from(e))
+            } else {
+                Ok(read_buf)
+            }
+        }
+    }
 }
 
 pub fn control_command(id: u8, command: u8) -> Vec<u8> {
@@ -41,7 +41,6 @@ pub fn checksum(vec: &mut Vec<u8>) {
     vec.push((checksum >> 8) as u8);
 }
 
-// TODO
 pub fn set_port(ports: &Vec<SerialPortInfo>, id: u8) -> Result<Box<dyn SerialPort>, Error> {
     match serialport::new(&*ports[id as usize].port_name, 9600)
         .timeout(Duration::from_millis(100))

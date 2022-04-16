@@ -1,9 +1,11 @@
 use adw::prelude::{ApplicationExt, ApplicationExtManual};
+use crate::app::values::APPLICATION_ID;
+
 mod app;
 
 fn main() {
     let application = adw::Application::new(
-        Some("com.github.reticulis.rs485-control"),
+        Some(APPLICATION_ID),
         Default::default(),
     );
 
