@@ -7,5 +7,5 @@ pub static APPLICATION_ID: &str = "com.github.reticulis.rs485-control";
 
 pub enum TypeData {
     ASCII,
-    MODBUS
+    MODBUS,
 }

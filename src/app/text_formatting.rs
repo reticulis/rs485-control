@@ -18,7 +18,7 @@ pub fn time_execute() -> String {
 
 pub fn convert_text_to_hex(text: String) -> Result<(Vec<u8>, TypeData), &'static str> {
     if text.contains("+") {
-        return Ok((text.chars().map(|c| c as u8).collect(), TypeData::ASCII))
+        return Ok((text.chars().map(|c| c as u8).collect(), TypeData::ASCII));
     }
     let text = text.split_whitespace().collect::<Vec<&str>>();
     let mut buf = Vec::new();

@@ -1,7 +1,7 @@
-use std::io::Read;
-use std::time::Duration;
 use crc::{Crc, CRC_16_MODBUS};
 use serialport::{DataBits, Error, Parity, SerialPort, SerialPortInfo, StopBits};
+use std::io::Read;
+use std::time::Duration;
 
 pub fn rs485_write(port: &mut Box<dyn SerialPort>, buf: &[u8]) {
     port.write(&buf).unwrap();
