@@ -41,8 +41,12 @@ pub fn checksum(vec: &mut Vec<u8>) {
     vec.push((checksum >> 8) as u8);
 }
 
-pub fn set_port(ports: &Vec<SerialPortInfo>, id: u8) -> Result<Box<dyn SerialPort>, Error> {
-    match serialport::new(&*ports[id as usize].port_name, 9600)
+pub fn set_port(ports: &Vec<SerialPortInfo>, id: u8) -> Result<Box<dyn SerialPort>, String> {
+    let id_ports = match ports.get(id as usize) {
+        Some(v) => v,
+        None => return Err("Failed connecting to device".to_owned())
+    };
+    match serialport::new(&*id_ports.port_name, 9600)
         .timeout(Duration::from_millis(100))
         .data_bits(DataBits::Eight)
         .parity(Parity::None)
@@ -50,7 +54,7 @@ pub fn set_port(ports: &Vec<SerialPortInfo>, id: u8) -> Result<Box<dyn SerialPor
         .open()
     {
         Ok(e) => Ok(e),
-        Err(e) => Err(e),
+        Err(e) => Err(e.to_string()),
     }
 }
 
