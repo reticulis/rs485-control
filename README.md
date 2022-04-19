@@ -25,7 +25,7 @@ Projekt oprogramowania do sterowania przekaźnikami za pomocą magistrali RS485 
    ```shell
    chmod +x package.sh && ./package.sh
    ```
-8. Powstanie nowy katalog (rs485-control) oraz plik zip (rs485-control.zip), w obu znajdują się potrzebne pliki oraz plik wykonywalny .exe 
+8. Utworzy się nowy katalog (rs485-control) oraz plik zip (rs485-control.zip), w obu znajdują się potrzebne pliki oraz plik wykonywalny .exe 
 
 ## Budowanie dla Linuxa (wspierana tylko Fedora)
 1. Zainstaluj potrzebne biblioteki:
@@ -47,3 +47,5 @@ Projekt oprogramowania do sterowania przekaźnikami za pomocą magistrali RS485 
    ```shell
    cargo run --release
    ```
+# Podziękowania
+dla @MGlolenstine za https://github.com/MGlolenstine/gtk4-cross oraz plik package.sh
