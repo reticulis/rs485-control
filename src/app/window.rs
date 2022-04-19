@@ -95,18 +95,25 @@ impl UI {
             for name in ports.borrow().iter() {
                 self.devices_list.append_text(&*name.port_name);
             }
-            match try_connect_to_device(&ports.borrow(), 0) {
-                (b, s) => {
-                    self.relays.set_sensitive(b);
-                    self.on_off_switch.set_sensitive(b);
-                    self.entry_command.set_sensitive(b);
-                    self.crc_check_button.set_sensitive(b);
-                    self.send_button.set_sensitive(b);
-                    self.text.insert(
-                        &mut self.text.end_iter(),
-                        &*format!("{} {}", time_execute(), s),
-                    );
-                    self.devices_list.set_active(Some(0));
+            if ports.borrow().len() == 0 {
+                self.text.insert(
+                    &mut self.text.end_iter(),
+                    &*format!("{} Not found devices!\n", time_execute()),
+                );
+            } else {
+                match try_connect_to_device(&ports.borrow(), 0) {
+                    (b, s) => {
+                        self.relays.set_sensitive(b);
+                        self.on_off_switch.set_sensitive(b);
+                        self.entry_command.set_sensitive(b);
+                        self.crc_check_button.set_sensitive(b);
+                        self.send_button.set_sensitive(b);
+                        self.text.insert(
+                            &mut self.text.end_iter(),
+                            &*format!("{} {}", time_execute(), s),
+                        );
+                        self.devices_list.set_active(Some(0));
+                    }
                 }
             }
         } else {
@@ -125,7 +132,17 @@ impl UI {
         self.devices_list.connect_active_notify(
             clone!(
                 @strong self as ui, @strong ports => move |_| {
-                    match try_connect_to_device(&ports.borrow(), ui.devices_list.active().unwrap() as u8) {
+                    let device_list_id = match ui.devices_list.active() {
+                        Some(i) => i as u8,
+                        None => {
+                            ui.text.insert(
+                                &mut ui.text.end_iter(),
+                                &*format!("{} Not found devices!\n", time_execute())
+                            );
+                            return ();
+                        }
+                    };
+                    match try_connect_to_device(&ports.borrow(), device_list_id) {
                         (b, s) => {
                             ui.relays.set_sensitive(b);
                             ui.on_off_switch.set_sensitive(b);

@@ -16,3 +16,6 @@ chrono = "0.4"
 [dependencies.adw]
 package = "libadwaita"
 version = "0.1.1"
+
+[profile.release]
+lto = true
