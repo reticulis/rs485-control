@@ -206,18 +206,19 @@ impl UI {
             }
         }));
 
-        self.send_button.connect_clicked(clone!(@strong self as ui, @strong ports => move |_| {
-            match ui.build_send_button(&ports) {
-                Ok(s) => ui.text.insert(
-                    &mut ui.text.end_iter(),
-                    &*s
-                ),
-                Err(e) => ui.text.insert(
-                    &mut ui.text.end_iter(),
-                    &*format!("{} Error sending data: {}\n", time_execute(), &*e.to_string())
-                )
-            }
-        }));
+        self.send_button
+            .connect_clicked(clone!(@strong self as ui, @strong ports => move |_| {
+                match ui.build_send_button(&ports) {
+                    Ok(s) => ui.text.insert(
+                        &mut ui.text.end_iter(),
+                        &*s
+                    ),
+                    Err(e) => ui.text.insert(
+                        &mut ui.text.end_iter(),
+                        &*format!("{} Error sending data: {}\n", time_execute(), &*e.to_string())
+                    )
+                }
+            }));
     }
 
     fn check_devices_list(
@@ -257,10 +258,7 @@ impl UI {
         ports: &RefCell<Vec<SerialPortInfo>>,
         buf: &[u8],
     ) -> Result<String, Box<dyn Error>> {
-        let mut port = set_port(
-            &ports.borrow(),
-            self.devices_list.active().unwrap() as u8
-        )?;
+        let mut port = set_port(&ports.borrow(), self.devices_list.active().unwrap() as u8)?;
 
         rs485_write(&mut port, buf)?;
         match rs485_read(&mut port) {
@@ -279,8 +277,12 @@ impl UI {
         rs485_read(&mut port)
     }
 
-    fn build_send_button(&self, ports: &RefCell<Vec<SerialPortInfo>>) -> Result<String, Box<dyn Error>> {
-        let mut port = set_port(&ports.borrow(), self.devices_list.active().unwrap() as u8).unwrap();
+    fn build_send_button(
+        &self,
+        ports: &RefCell<Vec<SerialPortInfo>>,
+    ) -> Result<String, Box<dyn Error>> {
+        let mut port =
+            set_port(&ports.borrow(), self.devices_list.active().unwrap() as u8).unwrap();
 
         let entry_text = self.entry_command.text();
 
@@ -310,11 +312,11 @@ impl UI {
                             received
                         ))
                     }
-                    Err(e) => Err(e)
+                    Err(e) => Err(e),
                 }
             }
-            Err(e) => Err(e)
-        }
+            Err(e) => Err(e),
+        };
     }
 
     fn set_all_sensitive(&self, b: bool) {
