@@ -1,6 +1,5 @@
 use super::device::{
     checksum, control_command, read_status_command, rs485_read, rs485_write, set_port,
-    try_connect_to_device,
 };
 use super::text_formatting::{
     convert_hex_to_ascii, convert_text_to_hex, convert_to_hex_format, time_execute,
@@ -8,11 +7,11 @@ use super::text_formatting::{
 
 use glib_macros::clone;
 use std::cell::RefCell;
+use std::error::Error;
 
-use crate::app::values::{TypeData, CGOBJECT, CGWINDOW, NFOUND, RELAY_CLOSE, RELAY_OPEN};
+use crate::app::values::{NotFoundDevices, TypeData, CGOBJECT, CGWINDOW, RELAY_CLOSE, RELAY_OPEN};
 use adw::prelude::*;
 use adw::{Application, ApplicationWindow};
-use glib::SignalHandlerId;
 use gtk::{
     Builder, Button, CheckButton, ComboBoxText, Entry, ScrolledWindow, SpinButton, Switch,
     TextBuffer, TextView,
@@ -63,28 +62,20 @@ pub struct UI {
 
 impl UI {
     pub fn new(builder: Builder) -> UI {
-        let relays: SpinButton = builder.object("relays").expect(CGOBJECT);
-        let devices_list: ComboBoxText = builder.object("devices").expect(CGOBJECT);
-        let on_off_switch: Switch = builder.object("on_off_switch").expect(CGOBJECT);
-        let refresh_button: Button = builder.object("refresh_button").expect(CGOBJECT);
-        let scrolled_window: ScrolledWindow = builder.object("scrolled_window").expect(CGOBJECT);
         let text_view: TextView = builder.object("text_view").expect(CGOBJECT);
-        let entry_command: Entry = builder.object("entry_command").expect(CGOBJECT);
-        let crc_check_button: CheckButton = builder.object("crc_check_button").expect(CGOBJECT);
-        let send_button: Button = builder.object("send_button").expect(CGOBJECT);
         let text = text_view.buffer();
 
         UI {
-            relays,
-            devices_list,
-            on_off_switch,
-            refresh_button,
-            scrolled_window,
+            relays: builder.object("relays").expect(CGOBJECT),
+            devices_list: builder.object("devices").expect(CGOBJECT),
+            on_off_switch: builder.object("on_off_switch").expect(CGOBJECT),
+            refresh_button: builder.object("refresh_button").expect(CGOBJECT),
+            scrolled_window: builder.object("scrolled_window").expect(CGOBJECT),
             text_view,
             text,
-            entry_command,
-            crc_check_button,
-            send_button,
+            entry_command: builder.object("entry_command").expect(CGOBJECT),
+            crc_check_button: builder.object("crc_check_button").expect(CGOBJECT),
+            send_button: builder.object("send_button").expect(CGOBJECT),
         }
     }
 
@@ -95,144 +86,82 @@ impl UI {
             for name in ports.borrow().iter() {
                 self.devices_list.append_text(&*name.port_name);
             }
-            if ports.borrow().len() == 0 {
-                self.text.insert(
-                    &mut self.text.end_iter(),
-                    &*format!("{} Not found devices!\n", time_execute()),
-                );
-            } else {
-                match try_connect_to_device(&ports.borrow(), 0) {
-                    (b, s) => {
-                        self.relays.set_sensitive(b);
-                        self.on_off_switch.set_sensitive(b);
-                        self.entry_command.set_sensitive(b);
-                        self.crc_check_button.set_sensitive(b);
-                        self.send_button.set_sensitive(b);
-                        self.text.insert(
-                            &mut self.text.end_iter(),
-                            &*format!("{} {}", time_execute(), s),
-                        );
-                        self.devices_list.set_active(Some(0));
-                    }
-                }
-            }
+            self.devices_list.set_active(Some(0));
+            let result = match self.check_devices_list(&ports) {
+                Ok(_) => "Connected!\n".to_owned(),
+                Err(e) => format!("Failed connecting! {}\n", &*e.to_string()),
+            };
+            self.text.insert(
+                &mut self.text.end_iter(),
+                &*format!("{} {}", time_execute(), result),
+            );
         } else {
-            self.text.insert(&mut self.text.end_iter(), NFOUND);
+            self.text
+                .insert(&mut self.text.end_iter(), "Not found devices!\n")
         }
 
-        self.build_devices_list(&ports);
-        self.build_refresh_devices(&ports);
-        let on_off_switch_signal_handler_id = self.build_on_off_switch(&ports);
-        self.build_relays(&ports, on_off_switch_signal_handler_id);
-        self.build_text_changed();
-        self.build_send_button(&ports);
-    }
-
-    fn build_devices_list(&self, ports: &RefCell<Vec<SerialPortInfo>>) -> SignalHandlerId {
         self.devices_list.connect_active_notify(
-            clone!(
-                @strong self as ui, @strong ports => move |_| {
-                    let device_list_id = match ui.devices_list.active() {
-                        Some(i) => i as u8,
-                        None => {
-                            ui.text.insert(
-                                &mut ui.text.end_iter(),
-                                &*format!("{} Not found devices!\n", time_execute())
-                            );
-                            return ();
-                        }
-                    };
-                    match try_connect_to_device(&ports.borrow(), device_list_id) {
-                        (b, s) => {
-                            ui.relays.set_sensitive(b);
-                            ui.on_off_switch.set_sensitive(b);
-                            ui.entry_command.set_sensitive(b);
-                            ui.crc_check_button.set_sensitive(b);
-                            ui.send_button.set_sensitive(b);
-                            ui.text.insert(
-                                &mut ui.text.end_iter(),
-                                &*format!("{} {}", time_execute(), s)
-                            );
-                        }
-                    }
-                }
-            )
-        )
-    }
-
-    fn build_refresh_devices<'a>(&self, ports: &RefCell<Vec<SerialPortInfo>>) -> SignalHandlerId {
-        self.refresh_button
-            .connect_clicked(clone!(@strong ports, @strong self as ui => move |_| {
-                ui.devices_list.remove_all();
-                for name in serialport::available_ports().unwrap() {
-                    ui.devices_list.append_text(&*name.port_name);
-                }
-
-                let mut  ports = ports.borrow_mut();
-
-                *ports = serialport::available_ports().unwrap();
-
-                ui.devices_list.set_active(Some(0));
-            }))
-    }
-
-    fn build_on_off_switch(&self, ports: &RefCell<Vec<SerialPortInfo>>) -> SignalHandlerId {
-        self.on_off_switch.connect_active_notify(clone!(
-            @strong self as ui, @strong ports => move |switch| {
-                let mut port = set_port(
-                    &ports.borrow(),
-                    ui.devices_list.active().unwrap() as u8
-                ).unwrap();
-                let buf = match switch.is_active() {
-                    true => {
-                        control_command(ui.relays.value() as u8 - 1, 1)
-                    },
-                    false => {
-                        control_command(ui.relays.value() as u8 - 1, 2)
-                    }
+            clone!(@strong self as ui, @strong ports => move |_| {
+                let result = match ui.check_devices_list(&ports) {
+                    Ok(_) => "Connected!\n".to_owned(),
+                    Err(e) => format!("Failed connecting! {}\n", &*e.to_string())
                 };
-                rs485_write(&mut port, &buf);
-                let data = rs485_read(&mut port);
-                match data {
-                    Ok(d) => {
+                ui.text.insert(
+                    &mut ui.text.end_iter(),
+                    &*format!("{} {}", time_execute(), result)
+                )
+            }),
+        );
+
+        self.refresh_button
+            .connect_clicked(clone!(@strong self as ui, @strong ports => move |_| {
+                if let Err(e) = ui.build_refresh_devices(&ports) {
+                    ui.text.insert(
+                        &mut ui.text.end_iter(),
+                        &*format!("{} Error: {}\n", time_execute(), &*e.to_string())
+                    )
+                };
+            }));
+
+        let on_off_switch_signal_handler_id = self.on_off_switch.connect_active_notify(
+            clone!(@strong self as ui, @strong ports => move |_| {
+                let buf = if ui.on_off_switch.is_active() {
+                    control_command(ui.relays.value() as u8 - 1, 1)
+                } else {
+                    control_command(ui.relays.value() as u8 - 1, 2)
+                };
+
+                match ui.build_on_off_switch(&ports, &buf) {
+                    Ok(s) => {
                         ui.text.insert(
                             &mut ui.text.end_iter(),
                             &*format!(
-                                "\n{} Sent: {}\n{} Received: {}\n",
+                                "{} Sent: {}\n{} Received: {}\n",
                                 time_execute(),
                                 convert_to_hex_format(&buf),
                                 time_execute(),
-                                convert_to_hex_format(&d)
+                                s
                             )
-                        );
+                        )
                     }
                     Err(e) => {
                         ui.text.insert(
                             &mut ui.text.end_iter(),
-                            &*format!("{} Error reading data! : {:X?}\n", time_execute(), e.description)
+                            &*format!(
+                                "{} Error reading data!: {}\n",
+                                time_execute(),
+                                &*e.to_string()
+                            )
                         )
                     }
                 }
-            }
-        ))
-    }
+            }),
+        );
 
-    fn build_relays(
-        &self,
-        ports: &RefCell<Vec<SerialPortInfo>>,
-        on_off_switch_signal_handler_id: SignalHandlerId,
-    ) -> SignalHandlerId {
-        self.relays.connect_value_changed(clone!(
-            @strong self as ui, @strong ports => move |relay| {
-                let mut port = set_port(
-                    &ports.borrow(), ui.devices_list.active().unwrap() as u8
-                ).unwrap();
-
-                let buf = read_status_command(relay.value() as u8 - 1);
-
-                rs485_write(&mut port, &buf);
-
-                match rs485_read(&mut port) {
+        self.relays
+            .connect_value_changed(clone!(@strong self as ui, @strong ports => move |_| {
+                let buf = read_status_command(ui.relays.value() as u8 - 1);
+                match ui.build_relays(&ports, &buf) {
                     Ok(data) => {
                         ui.text.insert(
                             &mut ui.text.end_iter(),
@@ -243,102 +172,156 @@ impl UI {
                                 convert_to_hex_format(&data)
                             )
                          );
+
                         ui.on_off_switch.block_signal(&on_off_switch_signal_handler_id);
-                        match data {
-                             o if o == RELAY_OPEN => ui.on_off_switch.set_state(true),
-                             c if c == RELAY_CLOSE=> ui.on_off_switch.set_state(false),
-                             _ => {
-                                ui.text.insert(
-                                    &mut ui.text.end_iter(),
-                                    &*format!(
-                                        "{} Valid data! : {:X?}\n",
-                                        time_execute(),
-                                        &data
-                                    )
+
+                        if data != RELAY_OPEN || data != RELAY_CLOSE {
+                            ui.text.insert(
+                                &mut ui.text.end_iter(),
+                                &*format!("\n{} Valid data! {:?}\n",
+                                    time_execute(), &data
                                 )
-                            }
+                            );
                         }
+
                         ui.on_off_switch.unblock_signal(&on_off_switch_signal_handler_id);
                     }
                     Err(e) => {
                         ui.text.insert(
                             &mut ui.text.end_iter(),
                             &*format!(
-                                "{} Error reading data! : {:X?}\n",
+                                "{} Error reading data! : {}\n",
                                 time_execute(),
-                                e.description
+                                &*e.to_string()
                             )
                         )
                     }
-                };
+                }
+            }));
 
-            }
-        ))
-    }
-
-    fn build_text_changed(&self) -> SignalHandlerId {
         self.text.connect_changed(clone!(@strong self as ui => move |_| {
             if ui.scrolled_window.vadjustment().upper() != ui.scrolled_window.vadjustment().page_size() {
                 let t = ui.text.create_mark(Some("screen"), &ui.text.end_iter(), false);
                 ui.text_view.scroll_to_mark(&t, 0., true, 0., 0.);
             }
-        }))
+        }));
+
+        self.send_button.connect_clicked(clone!(@strong self as ui, @strong ports => move |_| {
+            match ui.build_send_button(&ports) {
+                Ok(s) => ui.text.insert(
+                    &mut ui.text.end_iter(),
+                    &*s
+                ),
+                Err(e) => ui.text.insert(
+                    &mut ui.text.end_iter(),
+                    &*format!("{} Error sending data: {}\n", time_execute(), &*e.to_string())
+                )
+            }
+        }));
     }
 
-    fn build_send_button(&self, ports: &RefCell<Vec<SerialPortInfo>>) -> SignalHandlerId {
-        self.send_button.connect_clicked(clone!(
-            @strong self as ui, @strong ports=> move |_| {
-                let mut port = set_port(
-                    &ports.borrow(),
-                    ui.devices_list.active().unwrap() as u8
-                ).unwrap();
+    fn check_devices_list(
+        &self,
+        ports: &RefCell<Vec<SerialPortInfo>>,
+    ) -> Result<(), Box<dyn Error>> {
+        if let Some(device_list_id) = self.devices_list.active() {
+            if let Err(e) = set_port(&ports.borrow(), device_list_id as u8) {
+                self.set_all_sensitive(false);
+                return Err(e);
+            }
+            self.set_all_sensitive(true);
+            return Ok(());
+        }
+        Err(Box::new(NotFoundDevices))
+    }
 
-                let entry_text = ui.entry_command.text();
+    fn build_refresh_devices(
+        &self,
+        ports: &RefCell<Vec<SerialPortInfo>>,
+    ) -> Result<(), Box<dyn Error>> {
+        self.devices_list.remove_all();
+        for name in serialport::available_ports()? {
+            self.devices_list.append_text(&*name.port_name);
+        }
 
-                match convert_text_to_hex(entry_text.to_string()) {
-                    Ok((mut v, t)) => {
-                        if ui.crc_check_button.is_active() {
-                            checksum(&mut v);
-                        }
-                        rs485_write(&mut port, &v);
-                        let data = rs485_read(&mut port);
-                        match data {
-                            Ok(d) => {
-                                let received = match t {
-                                    TypeData::ASCII => convert_hex_to_ascii(d),
-                                    TypeData::MODBUS => convert_to_hex_format(&d)
-                                };
-                                ui.text.insert(
-                                    &mut ui.text.end_iter(),
-                                    &*format!(
-                                        "\n{} Command sent: {}\n{} Received: {:?}\n",
-                                        time_execute(),
-                                        entry_text.to_string(),
-                                        time_execute(),
-                                        received
-                                    )
-                                );
-                            }
-                            Err(e) => {
-                                ui.text.insert(
-                                    &mut ui.text.end_iter(),
-                                    &*format!(
-                                        "{} Error reading data! : {:X?}\n",
-                                        time_execute(),
-                                        e.description
-                                    )
-                                )
-                            }
-                        }
+        let mut ports = ports.borrow_mut();
+
+        *ports = serialport::available_ports()?;
+
+        self.devices_list.set_active(Some(0));
+        Ok(())
+    }
+
+    fn build_on_off_switch(
+        &self,
+        ports: &RefCell<Vec<SerialPortInfo>>,
+        buf: &[u8],
+    ) -> Result<String, Box<dyn Error>> {
+        let mut port = set_port(
+            &ports.borrow(),
+            self.devices_list.active().unwrap() as u8
+        )?;
+
+        rs485_write(&mut port, buf)?;
+        match rs485_read(&mut port) {
+            Ok(d) => Ok(convert_to_hex_format(&d)),
+            Err(e) => Err(e),
+        }
+    }
+
+    fn build_relays(
+        &self,
+        ports: &RefCell<Vec<SerialPortInfo>>,
+        buf: &[u8],
+    ) -> Result<Vec<u8>, Box<dyn Error>> {
+        let mut port = set_port(&ports.borrow(), self.devices_list.active().unwrap() as u8)?;
+        rs485_write(&mut port, buf)?;
+        rs485_read(&mut port)
+    }
+
+    fn build_send_button(&self, ports: &RefCell<Vec<SerialPortInfo>>) -> Result<String, Box<dyn Error>> {
+        let mut port = set_port(&ports.borrow(), self.devices_list.active().unwrap() as u8).unwrap();
+
+        let entry_text = self.entry_command.text();
+
+        // OMG SORRY
+        return match convert_text_to_hex(entry_text.to_string()) {
+            Ok(t) => {
+                let mut vec = match &t {
+                    TypeData::ASCII(v) => v.clone(),
+                    TypeData::MODBUS(v) => v.clone(),
+                };
+                if self.crc_check_button.is_active() {
+                    checksum(&mut vec);
+                }
+                rs485_write(&mut port, &vec)?;
+                let data = rs485_read(&mut port);
+                match data {
+                    Ok(d) => {
+                        let received = match &t {
+                            TypeData::ASCII(_) => convert_hex_to_ascii(&d),
+                            TypeData::MODBUS(_) => convert_to_hex_format(&d),
+                        };
+                        Ok(format!(
+                            "\n{} Command sent: {}\n{} Received: {:?}\n",
+                            time_execute(),
+                            entry_text,
+                            time_execute(),
+                            received
+                        ))
                     }
-                    Err(e) => {
-                        ui.text.insert(
-                            &mut ui.text.end_iter(),
-                            &*format!("{} {}\n", time_execute(), e)
-                        );
-                    }
+                    Err(e) => Err(e)
                 }
             }
-        ))
+            Err(e) => Err(e)
+        }
+    }
+
+    fn set_all_sensitive(&self, b: bool) {
+        self.relays.set_sensitive(b);
+        self.on_off_switch.set_sensitive(b);
+        self.entry_command.set_sensitive(b);
+        self.crc_check_button.set_sensitive(b);
+        self.send_button.set_sensitive(b);
     }
 }

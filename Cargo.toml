@@ -7,11 +7,11 @@ edition = "2021"
 
 [dependencies]
 gtk = { version = "0.4.7", package = "gtk4"}
-glib = "0.15.10"
-glib-macros = "0.15.10"
-crc = "2.0"
-serialport = "4.0.1"
-chrono = "0.4"
+glib = "0.15.11"
+glib-macros = "0.15.11"
+crc = "3.0.0"
+serialport = "4.1.0"
+chrono = "0.4.19"
 
 [dependencies.adw]
 package = "libadwaita"

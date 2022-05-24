@@ -1,4 +1,5 @@
 use chrono::Timelike;
+use std::error::Error;
 
 use super::values::TypeData;
 
@@ -16,21 +17,20 @@ pub fn time_execute() -> String {
     )
 }
 
-pub fn convert_text_to_hex(text: String) -> Result<(Vec<u8>, TypeData), &'static str> {
-    if text.contains("+") {
-        return Ok((text.chars().map(|c| c as u8).collect(), TypeData::ASCII));
+pub fn convert_text_to_hex(text: String) -> Result<TypeData, Box<dyn Error>> {
+    if text.contains('+') {
+        return Ok(TypeData::ASCII(text.chars().map(|c| c as u8).collect()));
     }
-    let text = text.split_whitespace().collect::<Vec<&str>>();
-    let mut buf = Vec::new();
-    for t in text {
+    let mut vec = Vec::new();
+    for t in text.split_whitespace() {
         match u8::from_str_radix(t, 16) {
-            Ok(i) => buf.push(i),
-            Err(_) => return Err("Valid input!"),
+            Ok(u) => vec.push(u),
+            Err(e) => return Err(Box::new(e)),
         }
     }
-    Ok((buf, TypeData::MODBUS))
+    Ok(TypeData::MODBUS(vec))
 }
 
-pub fn convert_hex_to_ascii(vec: Vec<u8>) -> String {
+pub fn convert_hex_to_ascii(vec: &[u8]) -> String {
     vec.iter().map(|&c| (c as char).to_string()).collect()
 }
